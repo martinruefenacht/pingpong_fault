@@ -4,5 +4,5 @@
 
 printenv | grep SLURM
 
-#mpiexec --separate_rank --separate_error --logexec --logfault --loghead ./pingpong
-mpiexec --separate_rank --separate_error --logexec --logfault --loghead ./pingpong_fault
+mpiexec ./pingpong_fault
+#mpiexec --separate_rank --separate_error --logexec --logfault --loghead ./pingpong_fault

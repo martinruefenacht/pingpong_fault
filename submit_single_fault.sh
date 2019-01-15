@@ -5,4 +5,5 @@ echo "##########################################################################
 printenv | grep SLURM
 echo "##############################################################################"
 
-mpiexec --separate_rank --separate_error --logexec --logfault --loghead ./pingpong_fault
+mpiexec ./pingpong_fault
+#mpiexec --separate_rank --separate_error --logexec --logfault --loghead ./pingpong_fault
