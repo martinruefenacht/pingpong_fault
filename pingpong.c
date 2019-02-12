@@ -116,6 +116,8 @@ int main_loop(int argc, char **argv, int epoch, int *done)
     	MPIX_SAFE_CALL(MPIX_Checkpoint_write(), code = MPIX_TRY_RELOAD, fail_return);
     }
 
+	printf("%d checksum %i == %i\n", rank, msg, MAX_ITERATION);
+
 
     if (code == MPI_SUCCESS)
     {

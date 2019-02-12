@@ -1,7 +1,11 @@
-default: perf
+default: stages
 
 perf: pingpong_perf.c
-	mpicc pingpong_perf.c -O2 -g -o pingpong_perf
+	mpicc pingpong_perf.c -O3 -g -o pingpong_perf
+
+stages: pingpong.c pingpong_fault.c
+	mpicc pingpong.c -o pingpong
+	mpicc pingpong_fault.c -o pingpong_fault
 
 all: pingpong.c pingpong_fault.c pingpong_perf.c
 	mpicc pingpong.c -o pingpong
@@ -16,6 +20,7 @@ clean:
 	rm -rf *.cp
 	rm -rf check*
 	rm -rf callgrind*
+	rm -rf core
 
 veryclean: clean
 	rm -rf pingpong

@@ -4,17 +4,27 @@
 #include <string.h>
 #include <time.h>
 
-#define MAX_ITERATION 33333 
+#define MAX_WARMUP 1000
+#define BLOCK_SIZE 5
+#define START_VALUE 19
 
-struct timespec diff(struct timespec start, struct timespec end)
+#define TARGET 0
+#define SOURCE 1
+#define TAG 9731
+
+struct timespec diff(struct timespec end, struct timespec start)
 {
 	struct timespec temp;
-	if ((end.tv_nsec-start.tv_nsec)<0) {
-		temp.tv_sec = end.tv_sec-start.tv_sec-1;
-		temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
-	} else {
-		temp.tv_sec = end.tv_sec-start.tv_sec;
-		temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+
+	if((end.tv_nsec - start.tv_nsec) < 0)
+	{
+		temp.tv_sec = end.tv_sec - start.tv_sec - 1;
+		temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+	} 
+	else 
+	{
+		temp.tv_sec = end.tv_sec - start.tv_sec;
+		temp.tv_nsec = end.tv_nsec - start.tv_nsec;
 	}
 	return temp;
 }
@@ -23,12 +33,11 @@ int main(int argc, char **argv)
 {
 	MPI_Init(&argc, &argv);
 
+	int max_iterations = atoi(argv[1]);
+
     int size, rank;
     int start, msg;
     int code = MPI_SUCCESS;
-
-    // Choose an iteration to fail
-    int failed_iteration = 3;
 
     // Get the number of processes
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -40,41 +49,67 @@ int main(int argc, char **argv)
     }
 
 	// initial payload
-	if(rank == 0)
-		msg = 0;
+	if(rank == SOURCE)
+		msg = START_VALUE;
 	else
 		msg = -1;
+
+	// warm up rounds
+	for (int i = 0; i < MAX_WARMUP; ++i)
+    {
+    	if(rank == SOURCE) 
+		{
+    		MPI_Send(&msg, 1, MPI_INT, TARGET, TAG, MPI_COMM_WORLD);
+    		MPI_Recv(&msg, 1, MPI_INT, TARGET, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    	}
+    	else
+		{
+    		MPI_Recv(&msg, 1, MPI_INT, SOURCE, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			msg += 1;
+    		MPI_Send(&msg, 1, MPI_INT, SOURCE, TAG, MPI_COMM_WORLD);
+    	}
+    }
 
     // Print off a hello world message
     printf("Hello world from rank %d out of %d processors\n", rank, size);
 
 	// start time
 	struct timespec end, stime;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &stime);
+	struct timespec array[max_iterations / BLOCK_SIZE];
 		
-    for (int i = 0; i < MAX_ITERATION; ++i)
+    for (int i = 0; i < max_iterations / BLOCK_SIZE; ++i)
     {
-    	if(rank == 0) 
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &stime);
+
+		for(int j = 0; j < BLOCK_SIZE; ++j)
 		{
-    		MPI_Send(&msg, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
-    		MPI_Recv(&msg, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    	}
-    	else
-		{
-    		MPI_Recv(&msg, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-			msg += 1;
-    		MPI_Send(&msg, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-    	}
+    		if(rank == SOURCE) 
+			{
+    			MPI_Send(&msg, 1, MPI_INT, TARGET, TAG, MPI_COMM_WORLD);
+    			MPI_Recv(&msg, 1, MPI_INT, TARGET, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    		}
+    		else
+			{
+    			MPI_Recv(&msg, 1, MPI_INT, SOURCE, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				msg += 1;
+    			MPI_Send(&msg, 1, MPI_INT, SOURCE, TAG, MPI_COMM_WORLD);
+    		}
+		}
+	
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+
+		array[i] = diff(end, stime).tv_nsec / BLOCK_SIZE;
     }
 
 	// end time
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 
-	printf("rank %i checksum %i == %i\n", rank, msg, MAX_ITERATION);
+	printf("rank %i checksum %i == %i\n", rank, msg, START_VALUE+MAX_WARMUP+max_iterations);
+	printf("rank %i iterations %i block size %i\n", rank, max_iterations, BLOCK_SIZE);
 
-	struct timespec d = diff(stime, end);
-	printf("rank %i tot sec %li nsec %li\n", rank, d.tv_sec, d.tv_nsec);
-	printf("rank %i avg sec %li nsec %li\n", rank, d.tv_sec/MAX_ITERATION, d.tv_nsec/MAX_ITERATION);
-
+	for(size_t i = 0; i < max_iterations/BLOCK_SIZE; ++i)
+	{
+		printf("%li %li\n", array[i].tv_sec, array[i].tv_nsec);
+	}
+	
 	MPI_Finalize();
 }
