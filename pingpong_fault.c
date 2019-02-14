@@ -64,7 +64,10 @@ int main_loop(int argc, char **argv, int epoch, int *done)
 
     if (epoch > 0) {
     	Application_Checkpoint_Read(epoch - 1, rank, &start, &msg);
+
+		// NOTE this disables failing again
     	failed_iteration = MAX_ITERATION + 1;
+
 		start += 1;
     }
     else {
@@ -108,6 +111,7 @@ int main_loop(int argc, char **argv, int epoch, int *done)
 			// inject fault
     		if (i == failed_iteration) 
 			{
+				printf("proc %i injecting fault, exit now\n", rank);
 				exit(MPIX_TRY_RELOAD);
     		}
 
@@ -122,6 +126,7 @@ int main_loop(int argc, char **argv, int epoch, int *done)
     	MPIX_SAFE_CALL(MPIX_Checkpoint_write(), code = MPIX_TRY_RELOAD, fail_return);
     }
 
+	printf("%d checksum %i == %i\n", rank, msg, MAX_ITERATION);
 
     if (code == MPI_SUCCESS)
     {

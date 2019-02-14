@@ -4,13 +4,13 @@
 #include <string.h>
 #include <time.h>
 
-#define MAX_WARMUP 1000
+#define MAX_WARMUP 5000
 #define BLOCK_SIZE 5
 #define START_VALUE 19
 
-#define TARGET 0
-#define SOURCE 1
-#define TAG 9731
+#define TARGET 1
+#define SOURCE 0
+#define TAG 9
 
 struct timespec diff(struct timespec end, struct timespec start)
 {
@@ -19,13 +19,18 @@ struct timespec diff(struct timespec end, struct timespec start)
 	if((end.tv_nsec - start.tv_nsec) < 0)
 	{
 		temp.tv_sec = end.tv_sec - start.tv_sec - 1;
-		temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+		temp.tv_nsec = 1000000000UL + end.tv_nsec - start.tv_nsec;
 	} 
 	else 
 	{
 		temp.tv_sec = end.tv_sec - start.tv_sec;
 		temp.tv_nsec = end.tv_nsec - start.tv_nsec;
 	}
+
+//	printf("%li %li\n", start.tv_sec, start.tv_nsec);
+//	printf("%li %li\n", end.tv_sec, end.tv_nsec);
+//	printf("%li %li\n", temp.tv_sec, temp.tv_nsec);
+
 	return temp;
 }
 
@@ -33,7 +38,13 @@ int main(int argc, char **argv)
 {
 	MPI_Init(&argc, &argv);
 
-	int max_iterations = atoi(argv[1]);
+	int max_iterations;
+	if(argc > 1)
+	{
+		max_iterations = atoi(argv[1]);
+	}
+	else
+		max_iterations = 100;
 
     int size, rank;
     int start, msg;
@@ -79,7 +90,12 @@ int main(int argc, char **argv)
 		
     for (int i = 0; i < max_iterations / BLOCK_SIZE; ++i)
     {
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &stime);
+		stime.tv_nsec = 0;
+		stime.tv_sec = 0;
+		end.tv_nsec = 0;
+		end.tv_sec = 0;
+
+		clock_gettime(CLOCK_MONOTONIC, &stime);
 
 		for(int j = 0; j < BLOCK_SIZE; ++j)
 		{
@@ -96,9 +112,11 @@ int main(int argc, char **argv)
     		}
 		}
 	
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		clock_gettime(CLOCK_MONOTONIC, &end);
 
-		array[i] = diff(end, stime).tv_nsec / BLOCK_SIZE;
+		array[i] = diff(end, stime);
+		array[i].tv_sec /= BLOCK_SIZE;
+		array[i].tv_nsec /= BLOCK_SIZE;
     }
 
 	// end time
@@ -108,7 +126,7 @@ int main(int argc, char **argv)
 
 	for(size_t i = 0; i < max_iterations/BLOCK_SIZE; ++i)
 	{
-		printf("%li %li\n", array[i].tv_sec, array[i].tv_nsec);
+		printf("%i %li %li\n", rank, array[i].tv_sec, array[i].tv_nsec);
 	}
 	
 	MPI_Finalize();
