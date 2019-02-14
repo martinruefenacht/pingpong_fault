@@ -3,7 +3,7 @@ profiles/
 benchmarks/
 *.out
 *.err
-cp.*
+*.cp
 check*
 *.log
 pingpong_perf
