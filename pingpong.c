@@ -1,12 +1,17 @@
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "mpi.h"
-
 #define MAX_ITERATION 5
 
 #define MPIX_SAFE_CALL(__operation, __predicate, __label) {int code = __operation; if (code != MPI_SUCCESS) {__predicate; goto __label;}}
+
+void inject_fault(int rank)
+{
+	printf("proc %i injecting fault, exit now\n", rank);
+	exit(MPIX_TRY_RELOAD);
+}
 
 int main_loop(int argc, char **argv, int epoch, int *done);
 
@@ -65,7 +70,10 @@ int main_loop(int argc, char **argv, int epoch, int *done)
 
     if (epoch > 0) {
     	Application_Checkpoint_Read(epoch - 1, rank, &start, &msg);
+
+		// NOTE this disables failing again
     	failed_iteration = MAX_ITERATION + 1;
+
 		start += 1;
     }
     else {
@@ -106,6 +114,12 @@ int main_loop(int argc, char **argv, int epoch, int *done)
 
 			msg += 1;
 			
+			// inject fault
+    		//if(i == failed_iteration) 
+			//{
+			//	inject_fault(rank);
+    		//}
+
     		// send to 0
     		MPIX_SAFE_CALL(MPI_Send(&msg, 1, MPI_INT, 0, 0, MPI_COMM_WORLD), code = MPIX_TRY_RELOAD, fail_return);
     		printf("proc %i sent %i\n", rank, msg);
@@ -118,7 +132,6 @@ int main_loop(int argc, char **argv, int epoch, int *done)
     }
 
 	printf("%d checksum %i == %i\n", rank, msg, MAX_ITERATION);
-
 
     if (code == MPI_SUCCESS)
     {

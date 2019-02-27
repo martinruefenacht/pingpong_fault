@@ -7,6 +7,12 @@
 
 #define MPIX_SAFE_CALL(__operation, __predicate, __label) {int code = __operation; if (code != MPI_SUCCESS) {__predicate; goto __label;}}
 
+void inject_fault(int rank)
+{
+	printf("proc %i injecting fault, exit now\n", rank);
+	exit(MPIX_TRY_RELOAD);
+}
+
 int main_loop(int argc, char **argv, int epoch, int *done);
 
 int Application_Checkpoint_Read(int epoch, int rank, int *start, int *payload);
@@ -109,10 +115,9 @@ int main_loop(int argc, char **argv, int epoch, int *done)
 			msg += 1;
 			
 			// inject fault
-    		if (i == failed_iteration) 
+    		if(i == failed_iteration) 
 			{
-				printf("proc %i injecting fault, exit now\n", rank);
-				exit(MPIX_TRY_RELOAD);
+				inject_fault(rank);
     		}
 
     		// send to 0

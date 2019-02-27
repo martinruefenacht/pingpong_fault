@@ -4,7 +4,7 @@
 #include <string.h>
 #include <time.h>
 
-#define MAX_WARMUP 5000
+#define MAX_WARMUP 0
 #define BLOCK_SIZE 5
 #define START_VALUE 19
 
@@ -101,14 +101,14 @@ int main(int argc, char **argv)
 		{
     		if(rank == SOURCE) 
 			{
-    			MPI_Send(&msg, 1, MPI_INT, TARGET, TAG, MPI_COMM_WORLD);
-    			MPI_Recv(&msg, 1, MPI_INT, TARGET, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    			MPI_Send(&msg, 1, MPI_INT, TARGET, TAG+i+j, MPI_COMM_WORLD);
+    			MPI_Recv(&msg, 1, MPI_INT, TARGET, TAG+i+j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     		}
     		else
 			{
-    			MPI_Recv(&msg, 1, MPI_INT, SOURCE, TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    			MPI_Recv(&msg, 1, MPI_INT, SOURCE, TAG+i+j, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				msg += 1;
-    			MPI_Send(&msg, 1, MPI_INT, SOURCE, TAG, MPI_COMM_WORLD);
+    			MPI_Send(&msg, 1, MPI_INT, SOURCE, TAG+i+j, MPI_COMM_WORLD);
     		}
 		}
 	
