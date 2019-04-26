@@ -3,8 +3,11 @@ default: stages
 perf: pingpong_perf.c
 	mpicc pingpong_perf.c -O3 -g -o pingpong_perf
 
-ring: ring_fault.c
-	mpicc ring_failt.c -O3 -g -o ring_fault
+ring: ring.c
+	mpicc $^ -O3 -g -o $@
+
+ring_fault: ring_fault.c
+	mpicc $^ -O3 -g -o $@
 
 .PHONY: stages
 stages: pingpong.c pingpong_fault.c
@@ -30,3 +33,5 @@ veryclean: clean
 	rm -rf pingpong
 	rm -rf pingpong_fault
 	rm -rf pingpong_perf
+	rm -rf ring
+	rm -rf ring_fault
