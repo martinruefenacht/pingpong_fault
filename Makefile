@@ -3,6 +3,9 @@ default: stages
 perf: pingpong_perf.c
 	mpicc pingpong_perf.c -O3 -g -o pingpong_perf
 
+ring: ring_fault.c
+	mpicc ring_failt.c -O3 -g -o ring_fault
+
 .PHONY: stages
 stages: pingpong.c pingpong_fault.c
 	mpicc pingpong.c -o pingpong
