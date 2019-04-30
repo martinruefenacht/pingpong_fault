@@ -31,20 +31,25 @@ int main(int argc, char** argv)
 	while (!abort && !done) {
 		switch(code) {
 		case MPI_SUCCESS: //process create/recreate situation
-			MPI_Init(&argc, &argv); //Function name might change later
-			MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+			code = MPI_Init(&argc, &argv); //Function name might change later
+			code = MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 			break;
+
 		case MPIX_TRY_RELOAD:
-			MPIX_Checkpoint_read(); //read the second to last checkpointed MPI state for this process and clear pending communication
+			code = MPIX_Checkpoint_read(); //read the second to last checkpointed MPI state for this process and clear pending communication
 			break;
+
 		default:
-			MPI_Abort(MPI_COMM_WORLD, -1);
+			code = MPI_Abort(MPI_COMM_WORLD, -1);
 			break;
 		}
-	    MPIX_Get_fault_epoch(&fault_epoch);
+
+	    code = MPIX_Get_fault_epoch(&fault_epoch);
 	    code = main_loop(fault_epoch, &done);
 	}
+
 	MPI_Finalize();
+
 	return 0;
 }
 
