@@ -116,6 +116,9 @@ int main_loop(int epoch, int *done) {
 	if (rank == 0) {
 		MPIX_SAFE_CALL(MPI_Recv(smallmessage, ARRAY_LEN, MPI_INT, (rank - 1 + size) % size, TAG, MPI_COMM_WORLD, &status), code = MPIX_TRY_RELOAD, fail_return);
 		printf("%d:  smallmessage[0] is now %d\n", rank, smallmessage[0]);
+		MPIX_SAFE_CALL(MPIX_Get_fault_epoch(&epoch), code = MPIX_TRY_RELOAD, fail_return);
+                Application_Checkpoint_Write(epoch, rank, size, smallmessage);
+                MPIX_SAFE_CALL(MPIX_Checkpoint_write(), code = MPIX_TRY_RELOAD, fail_return);
 	}
 	
 	printf("%d: Exiting\n", rank);
