@@ -9,6 +9,9 @@ ring: ring.c
 ring_fault: ring_fault.c
 	mpicc $^ -O3 -g -o $@
 
+manytoone: manytoone.c
+	mpicc $^ -g -o $@
+
 .PHONY: stages
 stages: pingpong.c pingpong_fault.c
 	mpicc pingpong.c -o pingpong
