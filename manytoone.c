@@ -1,5 +1,6 @@
 #include "mpi.h"
 #include <stdio.h>
+#include <unistd.h>
 
 int main(int argc, char **argv)
 {
@@ -13,6 +14,8 @@ int main(int argc, char **argv)
 	if(rank == 0)
 	{
 		MPI_Barrier(MPI_COMM_WORLD);
+
+		sleep(5);
 
 		for(int irank = 1; irank < size; ++irank)
 		{

@@ -12,6 +12,9 @@ ring_fault: ring_fault.c
 manytoone: manytoone.c
 	mpicc $^ -g -o $@
 
+manytomany: manytomany.c
+	mpicc $^ -g -o $@
+
 .PHONY: stages
 stages: pingpong.c pingpong_fault.c
 	mpicc pingpong.c -o pingpong
@@ -38,3 +41,5 @@ veryclean: clean
 	rm -rf pingpong_perf
 	rm -rf ring
 	rm -rf ring_fault
+	rm -rf manytoone
+	rm -rf manytomany
