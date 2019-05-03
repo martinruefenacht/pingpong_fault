@@ -14,13 +14,16 @@ int main(int argc, char **argv)
 	for(int iteration = 0; iteration < 10; ++iteration)
 	{
 		// send all many to many
+		MPI_Request requests[size];
+
 		for(int irank = 1; irank < size; ++irank)
 		{
 			int res[12000] = {rank * 2 + 1}; 
-			MPI_Send(&res, 12000, MPI_INT, (rank + irank) % size, 0, MPI_COMM_WORLD);
+			MPI_Isend(&res, 12000, MPI_INT, (rank + irank) % size, 0, MPI_COMM_WORLD, &requests[irank-1]);
 		}
 
-		sleep(1);
+
+		MPI_Barrier(MPI_COMM_WORLD);
 
 		// recv all
 		for(int irank = 1; irank < size; ++irank)
@@ -32,6 +35,8 @@ int main(int argc, char **argv)
 
 			printf("rank %i recv_rank %i data %i\n", rank, recv_rank, res[0]);
 		}
+
+		MPI_Waitall(size-1, requests, MPI_STATUSES_IGNORE);
 	}
 
 	MPI_Finalize();
