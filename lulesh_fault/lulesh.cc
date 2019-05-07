@@ -2785,7 +2785,7 @@ int main(int argc, char** argv) {
           break;
        case MPIX_TRY_RELOAD:
           t_s = MPI_Wtime();
-          MPIX_Load_checkpoint();
+          MPIX_Checkpoint_read();
 	  t_e = MPI_Wtime();
           printf("Load checkpoint time %lf\n", t_e - t_s);
           break;
@@ -2936,7 +2936,7 @@ int main_loop(int argc, char **argv, int epoch, int *done)
       printf("Time before write %lf\n", MPI_Wtime());      
       Application_Checkpoint_Write(epoch, myRank, *locDom, opts);
       double t_s =  MPI_Wtime();
-      MPIX_SAFE_CALL(MPIX_Checkpoint(), code = MPIX_TRY_RELOAD, fail_return);
+      MPIX_SAFE_CALL(MPIX_Checkpoint_write(), code = MPIX_TRY_RELOAD, fail_return);
       double t_e =  MPI_Wtime();
 	printf("MPI Checkpoint Write time %lf\n", t_e - t_s);
       MPIX_SAFE_CALL(MPIX_Get_fault_epoch(&epoch), code = MPIX_TRY_RELOAD, fail_return);
