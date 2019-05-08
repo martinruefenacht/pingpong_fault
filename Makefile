@@ -33,7 +33,6 @@ clean:
 	rm -rf *.cp
 	rm -rf check*
 	rm -rf callgrind*
-	rm -rf core*
 
 veryclean: clean
 	rm -rf pingpong
@@ -43,3 +42,4 @@ veryclean: clean
 	rm -rf ring_fault
 	rm -rf manytoone
 	rm -rf manytomany
+	rm -rf core*
