@@ -1,5 +1,3 @@
-default: stages
-
 perf: pingpong_perf.c
 	mpicc pingpong_perf.c -O3 -g -o pingpong_perf
 
@@ -15,10 +13,11 @@ manytoone: manytoone.c
 manytomany: manytomany.c
 	mpicc $^ -g -o $@
 
-.PHONY: stages
-stages: pingpong.c pingpong_fault.c
-	mpicc pingpong.c -o pingpong
-	mpicc pingpong_fault.c -o pingpong_fault
+pingpong: pingpong.c
+	mpicc $^ -g -o $@
+
+pingpong_fault: pingpong_fault.c
+	mpicc $^ -g -o $@
 
 all: pingpong.c pingpong_fault.c pingpong_perf.c
 	mpicc pingpong.c -o pingpong
