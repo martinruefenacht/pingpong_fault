@@ -42,3 +42,4 @@ veryclean: clean
 	rm -rf manytoone
 	rm -rf manytomany
 	rm -rf core*
+	rm -rf a.out
