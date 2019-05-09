@@ -10,14 +10,9 @@
 #define DEBUG
 #define MPIX_SAFE_CALL(__operation,__predicate,__label) {int __code = __operation; if(__code != MPI_SUCCESS) {__predicate; goto __label;}}
 
-void inject_fault(int rank)
-{
-	printf("proc %i injecting fault, exit now\n", rank);
-	exit(MPIX_TRY_RELOAD);
-}
-int Application_Checkpoint_Read(int epoch, int rank, int *r, int *size, int smallmessage[]);
-void Application_Checkpoint_Write(int epoch, int rank, int size, int smallmessage[]);
-
+void inject_fault(int rank);
+void application_checkpoint_read(int epoch, int rank, int smallmessage[]);
+void application_checkpoint_write(int epoch, int rank, int smallmessage[]);
 int main_loop(int restart_iteration, int *done);
 
 int main(int argc, char** argv)
@@ -30,17 +25,17 @@ int main(int argc, char** argv)
 
 	while (!abort && !done) {
 		switch(code) {
-		case MPI_SUCCESS: //process create/recreate situation
-			code = MPI_Init(&argc, &argv); //Function name might change later
+		case MPI_SUCCESS: 
+			code = MPI_Init(&argc, &argv);
 			code = MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 			break;
 
 		case MPIX_TRY_RELOAD:
-			code = MPIX_Checkpoint_read(); //read the second to last checkpointed MPI state for this process and clear pending communication
+			code = MPIX_Checkpoint_read(); 
 			break;
 
 		default:
-			code = MPI_Abort(MPI_COMM_WORLD, -1);
+			MPI_Abort(MPI_COMM_WORLD, 100);
 			break;
 		}
 
@@ -60,21 +55,19 @@ int main_loop(int epoch, int *done) {
 	int smallmessage[ARRAY_LEN];
 	MPI_Status status;
 	
-	int failed_iteration = 3;
+	// Randomly choose an iteration to fail between 0 and MAX_ITERATION - 1
+	srand(time(NULL));
+	int failed_iteration = rand() % TIMES_AROUND_LOOP;
+
+	MPIX_SAFE_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size), code = MPIX_TRY_RELOAD, fail_return);
+	MPIX_SAFE_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank), code = MPIX_TRY_RELOAD, fail_return);
 
 	if (epoch > 0) {
-		MPIX_SAFE_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &crank), code = MPIX_TRY_RELOAD, fail_return);
-		Application_Checkpoint_Read(epoch - 1, crank, &rank, &size, smallmessage);
-		
-		printf("%d: Size=%d, rank=%d, epoch=%d\n", rank, size, rank, epoch);
-		
+		application_checkpoint_read(epoch - 1, rank, smallmessage);
 		failed_iteration = TIMES_AROUND_LOOP + 1;
 	}
 	else {
-		MPIX_SAFE_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size), code = MPIX_TRY_RELOAD, fail_return);
-		MPIX_SAFE_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank), code = MPIX_TRY_RELOAD, fail_return);
 		printf("%d: Size=%d, rank=%d\n", rank, size, rank);
-
 		smallmessage[0] = 0;
 		for (i = 1; i < ARRAY_LEN; i++) {
 			smallmessage[i] = 0;
@@ -92,7 +85,7 @@ int main_loop(int epoch, int *done) {
 		if (rank == 0) {
 			++smallmessage[0];
 			MPIX_SAFE_CALL(MPIX_Get_fault_epoch(&epoch), code = MPIX_TRY_RELOAD, fail_return);
-                	Application_Checkpoint_Write(epoch, rank, size, smallmessage);
+                	application_checkpoint_write(epoch, rank, smallmessage);
                 	MPIX_SAFE_CALL(MPIX_Checkpoint_write(), code = MPIX_TRY_RELOAD, fail_return);
 		}
 		printf("%d: About to MPI_Send...\n", rank);
@@ -101,7 +94,7 @@ int main_loop(int epoch, int *done) {
 		
 		if (rank != 0) {
 			MPIX_SAFE_CALL(MPIX_Get_fault_epoch(&epoch), code = MPIX_TRY_RELOAD, fail_return);
-                	Application_Checkpoint_Write(epoch, rank, size, smallmessage);
+                	application_checkpoint_write(epoch, rank, smallmessage);
                 	MPIX_SAFE_CALL(MPIX_Checkpoint_write(), code = MPIX_TRY_RELOAD, fail_return);
 		}
 
@@ -116,12 +109,11 @@ int main_loop(int epoch, int *done) {
 	if (rank == 0) {
 		MPIX_SAFE_CALL(MPI_Recv(smallmessage, ARRAY_LEN, MPI_INT, (rank - 1 + size) % size, TAG, MPI_COMM_WORLD, &status), code = MPIX_TRY_RELOAD, fail_return);
 		printf("%d:  smallmessage[0] is now %d\n", rank, smallmessage[0]);
-		MPIX_SAFE_CALL(MPIX_Get_fault_epoch(&epoch), code = MPIX_TRY_RELOAD, fail_return);
-                Application_Checkpoint_Write(epoch, rank, size, smallmessage);
-                MPIX_SAFE_CALL(MPIX_Checkpoint_write(), code = MPIX_TRY_RELOAD, fail_return);
 	}
 	
 	printf("%d: Exiting\n", rank);
+	
+	code = MPIX_SAFE_CALL(MPI_Barrier(MPI_COMM_WORLD), code = MPIX_TRY_RELOAD, fail_return);
 	if (code == MPI_SUCCESS) {
 		*done = 1;
 	}
@@ -132,7 +124,13 @@ int main_loop(int epoch, int *done) {
 	return MPIX_TRY_RELOAD;
 }
 
-int Application_Checkpoint_Read(int epoch, int rank, int *r, int *size, int smallmessage[]) {
+void inject_fault(int rank)
+{
+	printf("proc %i injecting fault, exit now\n", rank);
+	exit(MPIX_TRY_RELOAD);
+}
+
+void application_checkpoint_read(int epoch, int rank, int smallmessage[]) {
 	FILE *fp;
 	char buf[10];
 	sprintf(buf, "check_%d_%d", epoch, rank);
@@ -140,13 +138,11 @@ int Application_Checkpoint_Read(int epoch, int rank, int *r, int *size, int smal
 		printf("ERROR: Opening File");
 	}
 	fread(smallmessage, sizeof(int), ARRAY_LEN, fp);
-	fread(r, sizeof(int), 1, fp);
-	fread(size, sizeof(int), 1, fp);
 	fclose(fp);
 	return 0;
 }
 
-void Application_Checkpoint_Write(int epoch, int rank, int size, int smallmessage[]) {
+void application_checkpoint_write(int epoch, int rank, int smallmessage[]) {
 	FILE *fp;
 	char buf[10];
 	sprintf(buf, "check_%d_%d", epoch, rank);
@@ -155,7 +151,5 @@ void Application_Checkpoint_Write(int epoch, int rank, int size, int smallmessag
 	}
 
 	fwrite(smallmessage, sizeof(int), ARRAY_LEN, fp);
-	fwrite(&rank, sizeof(int), 1, fp);
-	fwrite(&size, sizeof(int), 1, fp);
 	fclose(fp);
 }
