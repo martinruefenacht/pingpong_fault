@@ -1,7 +1,7 @@
 default: stages
 
 perf: pingpong_perf.c
-	mpicc pingpong_perf.c -O3 -g -o pingpong_perf
+	mpicxx --std=c++17 pingpong_perf.c -O3 -g -o pingpong_perf
 
 .PHONY: stages
 stages: pingpong.c pingpong_fault.c
