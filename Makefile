@@ -1,12 +1,23 @@
-default: stages
-
 perf: pingpong_perf.c
 	mpicxx --std=c++17 pingpong_perf.c -O3 -g -o pingpong_perf
 
-.PHONY: stages
-stages: pingpong.c pingpong_fault.c
-	mpicc pingpong.c -o pingpong
-	mpicc pingpong_fault.c -o pingpong_fault
+ring: ring.c
+	mpicc $^ -O3 -g -o $@
+
+ring_fault: ring_fault.c
+	mpicc $^ -O3 -g -o $@
+
+manytoone: manytoone.c
+	mpicc $^ -g -o $@
+
+manytomany: manytomany.c
+	mpicc $^ -g -o $@
+
+pingpong: pingpong.c
+	mpicc $^ -g -o $@
+
+pingpong_fault: pingpong_fault.c
+	mpicc $^ -g -o $@
 
 all: pingpong.c pingpong_fault.c pingpong_perf.c
 	mpicc pingpong.c -o pingpong
@@ -21,9 +32,14 @@ clean:
 	rm -rf *.cp
 	rm -rf check*
 	rm -rf callgrind*
-	rm -rf core*
 
 veryclean: clean
 	rm -rf pingpong
 	rm -rf pingpong_fault
 	rm -rf pingpong_perf
+	rm -rf ring
+	rm -rf ring_fault
+	rm -rf manytoone
+	rm -rf manytomany
+	rm -rf core*
+	rm -rf a.out
