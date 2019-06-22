@@ -1,6 +1,9 @@
 pingpong_perf: pingpong_perf.c
 	mpicc $^ -O3 -g -o $@
 
+#perf: pingpong_perf.c
+#	mpicxx --std=c++17 pingpong_perf.c -O3 -g -o pingpong_perf
+
 ring: ring.c
 	mpicc $^ -O3 -g -o $@
 

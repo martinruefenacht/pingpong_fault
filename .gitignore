@@ -10,3 +10,4 @@ pingpong_perf
 pingpong
 pingpong_fault
 *.swp
+*.dSYM
