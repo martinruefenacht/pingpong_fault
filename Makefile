@@ -1,11 +1,14 @@
-perf: pingpong_perf.c
-	mpicc pingpong_perf.c -O3 -g -o pingpong_perf
+pingpong_perf: pingpong_perf.c
+	mpicc $^ -O3 -g -o $@
 
 ring: ring.c
 	mpicc $^ -O3 -g -o $@
 
 ring_fault: ring_fault.c
 	mpicc $^ -O3 -g -o $@
+
+fsend: fsend.cpp
+	mpicxx $^ -g -o $@
 
 manytoone: manytoone.c
 	mpicc $^ -g -o $@
@@ -39,6 +42,7 @@ veryclean: clean
 	rm -rf pingpong_perf
 	rm -rf ring
 	rm -rf ring_fault
+	rm -rf fsend
 	rm -rf manytoone
 	rm -rf manytomany
 	rm -rf core*
