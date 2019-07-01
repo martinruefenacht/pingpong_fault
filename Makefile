@@ -11,7 +11,7 @@ ring_fault: ring_fault.c
 	mpicc $^ -O3 -g -o $@
 
 fsend: fsend.cpp
-	mpicxx $^ -g -o $@
+	mpicxx --log=info $^ -g -o $@
 
 manytoone: manytoone.c
 	mpicc $^ -g -o $@
@@ -23,6 +23,9 @@ pingpong: pingpong.c
 	mpicc $^ -g -o $@
 
 pingpong_fault: pingpong_fault.c
+	mpicc $^ -g -o $@
+
+barrier: barrier.cpp
 	mpicc $^ -g -o $@
 
 all: pingpong.c pingpong_fault.c pingpong_perf.c
@@ -50,3 +53,4 @@ veryclean: clean
 	rm -rf manytomany
 	rm -rf core*
 	rm -rf a.out
+	rm -rf barrier

@@ -38,5 +38,7 @@ int main(int argc, char **argv)
 	std::cout << rank << std::endl;
 	std::cout << j << std::endl;
 
+	MPI_Barrier(MPI_COMM_WORLD);
+
 	MPI_Finalize();
 }
